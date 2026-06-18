@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#13294b" />
+<title>국민연금 더 낼까 말까 — 쉬운 분석기</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" />
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<style>
+  :root{
+    --navy:#13294b; --blue:#1f5fd6; --blue-d:#1648a8; --blue-soft:#e9f1ff;
+    --ink:#1c2530; --muted:#5e6b7a; --line:#dfe5ec; --bg:#eef2f7; --card:#fff;
+    --green:#0f8a4d; --green-soft:#e3f6ec; --amber:#c47f0a; --amber-soft:#fdf3df;
+    --red:#cf3030; --red-soft:#fdecec;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html{font-size:17px}
+  body{
+    font-family:'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo',sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.65;letter-spacing:-0.01em;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* phone/tablet frame */
+  .app{max-width:560px;margin:0 auto;min-height:100vh;background:var(--bg);
+    display:flex;flex-direction:column;position:relative}
+
+  /* top bar */
+  .topbar{position:sticky;top:0;z-index:20;background:var(--navy);color:#fff;
+    padding:14px 18px 12px;display:flex;align-items:center;gap:12px}
+  .topbar .back{width:40px;height:40px;border-radius:11px;border:none;background:rgba(255,255,255,.16);
+    color:#fff;font-size:22px;font-weight:700;cursor:pointer;flex-shrink:0;display:none;
+    align-items:center;justify-content:center;line-height:1}
+  .topbar .back.show{display:flex}
+  .topbar .tt{flex:1;min-width:0}
+  .topbar .tt .big{font-size:16px;font-weight:800;letter-spacing:-0.02em}
+  .topbar .tt .sm{font-size:12.5px;color:#b9cce6;margin-top:1px}
+  .pbar{height:7px;background:rgba(255,255,255,.18)}
+  .pbar .fill{height:100%;background:linear-gradient(90deg,#5fa0ff,#a9c8ff);width:0;border-radius:0 6px 6px 0;transition:width .35s ease}
+
+  .stage{flex:1;padding:22px 18px 28px}
+  .screen{display:none;animation:slide .32s ease}
+  .screen.active{display:block}
+  @keyframes slide{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+
+  .qnum{font-size:14px;font-weight:800;color:var(--blue);margin-bottom:8px}
+  h2.q{font-size:25px;font-weight:800;line-height:1.35;letter-spacing:-0.03em;color:var(--navy)}
+  p.help{font-size:16px;color:var(--muted);margin-top:10px;line-height:1.6}
+  p.help.big{font-size:17px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;color:#3a4654}
+
+  /* option cards (tap targets) */
+  .opts{margin-top:22px;display:flex;flex-direction:column;gap:12px}
+  .opt{display:flex;align-items:center;gap:14px;width:100%;text-align:left;
+    background:#fff;border:2.5px solid var(--line);border-radius:16px;padding:18px 18px;
+    font-size:19px;font-weight:700;color:var(--ink);cursor:pointer;transition:.12s;min-height:66px}
+  .opt:active{transform:scale(.985)}
+  .opt .emoji{font-size:26px;flex-shrink:0;width:30px;text-align:center}
+  .opt .ot{flex:1}
+  .opt .ot .od{display:block;font-size:14px;font-weight:600;color:var(--muted);margin-top:3px}
+  .opt .chk{width:28px;height:28px;border-radius:50%;border:2.5px solid var(--line);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;transition:.12s}
+  .opt.sel{border-color:var(--blue);background:var(--blue-soft)}
+  .opt.sel .chk{background:var(--blue);border-color:var(--blue)}
+  .opt.ghost{justify-content:center;border-style:dashed;font-size:17px;color:var(--muted);min-height:58px;font-weight:700}
+  .opt.ghost .chk{display:none}
+
+  /* year input */
+  .yearbox{margin-top:24px;text-align:center}
+  .yearbox input{width:100%;max-width:280px;text-align:center;font-size:42px;font-weight:800;
+    color:var(--navy);border:none;border-bottom:4px solid var(--blue);background:transparent;
+    padding:8px 0;letter-spacing:2px;font-family:inherit}
+  .yearbox input:focus{outline:none}
+  .yearbox .unit{font-size:22px;font-weight:800;color:var(--navy);margin-left:6px}
+  .feedback{margin-top:18px;background:var(--green-soft);border:1px solid #bfe6cf;border-radius:14px;
+    padding:14px 16px;font-size:16px;color:#155e3a;font-weight:600;display:none}
+  .feedback.show{display:block}
+
+  /* month grid */
+  .mgrid{margin-top:18px;display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+  .mbtn{background:#fff;border:2px solid var(--line);border-radius:12px;padding:13px 0;font-size:16px;
+    font-weight:700;color:var(--ink);cursor:pointer}
+  .mbtn.sel{border-color:var(--blue);background:var(--blue-soft);color:var(--blue-d)}
+  .mlabel{margin-top:24px;font-size:15px;font-weight:800;color:var(--muted)}
+
+  /* stepper */
+  .stepper{margin-top:26px;display:flex;align-items:center;justify-content:center;gap:18px}
+  .stepper button{width:68px;height:68px;border-radius:50%;border:none;background:var(--blue);color:#fff;
+    font-size:34px;font-weight:700;cursor:pointer;line-height:1;box-shadow:0 4px 12px rgba(31,95,214,.32)}
+  .stepper button:active{transform:scale(.94)}
+  .stepper button:disabled{background:#c3ccd8;box-shadow:none}
+  .stepper .val{min-width:130px;text-align:center}
+  .stepper .val .n{font-size:46px;font-weight:800;color:var(--navy);line-height:1}
+  .stepper .val .u{font-size:17px;font-weight:700;color:var(--muted)}
+
+  /* preset money buttons */
+  .presets{margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .pbtn{background:#fff;border:2.5px solid var(--line);border-radius:16px;padding:18px 12px;cursor:pointer;text-align:center}
+  .pbtn .pl{font-size:18px;font-weight:800;color:var(--ink)}
+  .pbtn .pa{font-size:15px;color:var(--muted);font-weight:600;margin-top:4px}
+  .pbtn.sel{border-color:var(--blue);background:var(--blue-soft)}
+  .pbtn.sel .pl{color:var(--blue-d)}
+
+  /* nav */
+  .nav{position:sticky;bottom:0;background:linear-gradient(180deg,rgba(238,242,247,0),var(--bg) 30%);
+    padding:14px 18px calc(16px + env(safe-area-inset-bottom));}
+  .next{width:100%;background:var(--blue);color:#fff;border:none;border-radius:16px;padding:19px;
+    font-size:20px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 6px 16px rgba(31,95,214,.3)}
+  .next:active{transform:translateY(1px)}
+  .next:disabled{background:#bcc6d3;box-shadow:none}
+  .next.gray{background:#46566a}
+
+  /* welcome */
+  .welcome{text-align:center;padding-top:18px}
+  .welcome .ico{font-size:64px}
+  .welcome h1{font-size:27px;font-weight:800;color:var(--navy);margin-top:14px;line-height:1.35;letter-spacing:-0.03em}
+  .welcome .quote{margin-top:16px;background:#fff;border:1px solid var(--line);border-radius:16px;
+    padding:18px 18px;font-size:16px;color:#3a4654;line-height:1.7;text-align:left}
+  .welcome ul{list-style:none;margin-top:18px;text-align:left;display:flex;flex-direction:column;gap:12px}
+  .welcome ul li{display:flex;gap:12px;align-items:center;font-size:16.5px;font-weight:600;color:#33404e;
+    background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .welcome ul li .e{font-size:24px}
+
+  /* confirm */
+  .sumlist{margin-top:20px;display:flex;flex-direction:column;gap:10px}
+  .sumrow{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--line);
+    border-radius:14px;padding:15px 16px}
+  .sumrow .sk{font-size:14.5px;color:var(--muted);font-weight:700;width:118px;flex-shrink:0}
+  .sumrow .sv{font-size:18px;font-weight:800;color:var(--navy);flex:1}
+  .sumrow .edit{background:var(--blue-soft);color:var(--blue-d);border:none;border-radius:10px;
+    padding:9px 14px;font-size:14px;font-weight:800;cursor:pointer}
+
+  /* result */
+  .verdict{border-radius:20px;padding:24px 20px;text-align:center;color:#fff}
+  .verdict.green{background:linear-gradient(135deg,#0f8a4d,#13a05c)}
+  .verdict.amber{background:linear-gradient(135deg,#c47f0a,#dd9412)}
+  .verdict.red{background:linear-gradient(135deg,#cf3030,#e03b3b)}
+  .verdict .light{font-size:52px}
+  .verdict .vh{font-size:24px;font-weight:800;margin-top:6px;line-height:1.35;letter-spacing:-0.02em}
+  .verdict .vs{font-size:16px;margin-top:10px;color:rgba(255,255,255,.92);line-height:1.6}
+
+  .bigcompare{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .bc{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 14px;text-align:center}
+  .bc.b{border:2px solid var(--blue);background:var(--blue-soft)}
+  .bc .bl{font-size:14.5px;color:var(--muted);font-weight:700}
+  .bc .bn{font-size:27px;font-weight:800;color:var(--navy);margin-top:6px;letter-spacing:-0.02em}
+  .bc .bn small{font-size:14px;color:var(--muted);font-weight:700}
+  .gainbox{margin-top:12px;background:#fff5ec;border:2px solid #ffcfa6;border-radius:16px;padding:16px;text-align:center}
+  .gainbox .gl{font-size:15px;color:#9a5a16;font-weight:700}
+  .gainbox .gn{font-size:30px;font-weight:800;color:#c2410c;margin-top:4px}
+
+  .rcard{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 18px;margin-top:14px}
+  .rcard h3{font-size:18px;font-weight:800;color:var(--navy);display:flex;align-items:center;gap:8px}
+  .rcard p{font-size:16px;color:#3a4654;line-height:1.7;margin-top:10px}
+  .rcard p b{color:var(--ink)}
+  .warnrow{display:flex;gap:12px;padding:14px 0;border-top:1px solid var(--line);font-size:15.5px;line-height:1.65;color:#3a4654}
+  .warnrow:first-of-type{border-top:none}
+  .warnrow .we{font-size:24px;flex-shrink:0}
+  .warnrow b{color:var(--ink)}
+
+  .callbtn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin-top:16px;
+    background:var(--green);color:#fff;border:none;border-radius:16px;padding:20px;font-size:20px;font-weight:800;
+    text-decoration:none;box-shadow:0 6px 16px rgba(15,138,77,.3)}
+  .callbtn .cph{font-size:24px}
+  .callsub{text-align:center;font-size:13.5px;color:var(--muted);margin-top:8px}
+
+  .restart{width:100%;margin-top:14px;background:#fff;border:2px solid var(--line);border-radius:16px;
+    padding:17px;font-size:17px;font-weight:800;color:#46566a;cursor:pointer;font-family:inherit}
+
+  /* detailed (expert) collapsible */
+  details.expert{margin-top:18px;background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  details.expert>summary{padding:18px;font-size:16px;font-weight:800;color:var(--blue-d);cursor:pointer;
+    list-style:none;display:flex;align-items:center;justify-content:space-between}
+  details.expert>summary::-webkit-details-marker{display:none}
+  details.expert>summary::after{content:"펼치기 ▾";font-size:14px;color:var(--muted)}
+  details.expert[open]>summary::after{content:"접기 ▴"}
+  .expert-body{padding:0 16px 18px;border-top:1px solid var(--line)}
+  .dt{width:100%;border-collapse:collapse;font-size:14.5px;margin-top:14px}
+  .dt th,.dt td{padding:11px 10px;text-align:left;border-bottom:1px solid var(--line)}
+  .dt th{background:#f6f8fb;color:#475467;font-weight:700;font-size:13px}
+  .dt td.n{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+  .dt tr.hl td{background:var(--blue-soft);font-weight:800}
+  .dnote{font-size:13.5px;line-height:1.7;color:#475467;background:#f6f8fb;border:1px solid var(--line);
+    border-radius:10px;padding:12px 14px;margin-top:12px}
+  .dh{font-size:15px;font-weight:800;color:var(--navy);margin-top:20px;display:flex;gap:7px;align-items:center}
+  .tline{position:relative;margin:20px 2px 4px;height:60px}
+  .tline .trk{position:absolute;top:28px;left:0;right:0;height:6px;background:#e8edf3;border-radius:6px}
+  .tline .fl{position:absolute;top:28px;left:0;height:6px;background:linear-gradient(90deg,#f59e0b,#10b981);border-radius:6px}
+  .tmk{position:absolute;top:6px;transform:translateX(-50%);text-align:center}
+  .tmk .dot{width:13px;height:13px;border-radius:50%;background:#fff;border:3px solid var(--blue);margin:14px auto 4px}
+  .tmk.s .dot{border-color:#f59e0b}.tmk.b .dot{border-color:#10b981}.tmk.d .dot{border-color:#8b5cf6}
+  .tmk .l{font-size:10.5px;font-weight:800;color:#475467;white-space:nowrap}
+  .tmk .a{font-size:10.5px;color:var(--muted)}
+
+  .disc{font-size:12px;color:#909bab;line-height:1.7;margin-top:20px;text-align:left}
+  .disc a{color:#6f8bbf}
+
+  .err{display:none;background:var(--red-soft);border:1px solid #f3c4c4;color:#8a1f1f;border-radius:12px;
+    padding:13px 15px;font-size:15px;font-weight:700;margin-top:16px}
+  .err.show{display:block}
+
+  @media(min-width:480px){ html{font-size:18px} }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <button class="back" id="backBtn" aria-label="이전">‹</button>
+    <div class="tt">
+      <div class="big" id="topTitle">국민연금, 더 낼까 말까?</div>
+      <div class="sm" id="topSub">쉽게 알려드릴게요</div>
+    </div>
+  </div>
+  <div class="pbar"><div class="fill" id="pfill"></div></div>
+
+  <div class="stage">
+
+    <!-- WELCOME -->
+    <section class="screen active" data-key="welcome">
+      <div class="welcome">
+        <div class="ico">🧮</div>
+        <h1>국민연금,<br>더 내면 정말 이득일까요?</h1>
+        <div class="quote">국민연금 임의(계속)가입 효율성 분석기입니다. 입력해주신 정보를 바탕으로 추가 납입의 실익을 철저하게 따져보겠습니다.</div>
+        <ul>
+          <li><span class="e">👆</span> 질문에 손가락으로 <b>하나씩</b> 답하면 끝</li>
+          <li><span class="e">⏱️</span> 1~2분이면 충분해요</li>
+          <li><span class="e">📞</span> 어려운 건 끝에서 <b>전화 연결</b>도 해드려요</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- STEP 1: birth -->
+    <section class="screen" data-key="s1">
+      <div class="qnum">질문 1</div>
+      <h2 class="q">몇 년에 태어나셨어요?</h2>
+      <p class="help">주민등록상 태어난 해를 눌러서 적어주세요.</p>
+      <div class="yearbox">
+        <input type="number" id="birthYear" inputmode="numeric" placeholder="1965" /><span class="unit">년</span>
+      </div>
+      <div class="feedback" id="birthFb"></div>
+      <div class="mlabel">태어난 달도 눌러주세요 <span style="font-weight:600;color:#9aa6b4">(모르면 그냥 다음)</span></div>
+      <div class="mgrid" id="monthGrid"></div>
+    </section>
+
+    <!-- STEP 2: status -->
+    <section class="screen" data-key="s2">
+      <div class="qnum">질문 2</div>
+      <h2 class="q">지금 어떤 상황이세요?</h2>
+      <p class="help">가장 가까운 것을 하나 골라주세요.</p>
+      <div class="opts" id="statusOpts">
+        <button class="opt" data-group="status" data-value="jobless"><span class="emoji">🏠</span><span class="ot">정년퇴직 후 쉬고 있어요<span class="od">직장을 그만두고 소득활동 안 함</span></span><span class="chk">✓</span></button>
+        <button class="opt" data-group="status" data-value="house"><span class="emoji">🍳</span><span class="ot">전업주부예요<span class="od">집안일을 하며 따로 벌이는 없음</span></span><span class="chk">✓</span></button>
+        <button class="opt" data-group="status" data-value="reemploy"><span class="emoji">💼</span><span class="ot">다시 취직해서 일해요<span class="od">회사에 다니며 월급 받음</span></span><span class="chk">✓</span></button>
+        <button class="opt" data-group="status" data-value="self"><span class="emoji">🛒</span><span class="ot">자영업/장사를 해요<span class="od">가게·사업으로 소득 있음</span></span><span class="chk">✓</span></button>
+      </div>
+    </section>
+
+    <!-- STEP 3: years -->
+    <section class="screen" data-key="s3">
+      <div class="qnum">질문 3</div>
+      <h2 class="q">국민연금을<br>몇 년쯤 내셨어요?</h2>
+      <p class="help">- / + 를 눌러 맞춰주세요. 정확하지 않아도 괜찮아요.</p>
+      <div class="stepper">
+        <button id="yMinus" aria-label="줄이기">−</button>
+        <div class="val"><div class="n" id="yVal">25</div><div class="u">년 동안</div></div>
+        <button id="yPlus" aria-label="늘리기">＋</button>
+      </div>
+      <div class="opts" style="margin-top:24px">
+        <button class="opt ghost" id="yUnknown">🤔 잘 모르겠어요 (대략 20년으로 볼게요)</button>
+      </div>
+    </section>
+
+    <!-- STEP 4: premium -->
+    <section class="screen" data-key="s4">
+      <div class="qnum">질문 4</div>
+      <h2 class="q">앞으로 매달<br>얼마를 더 내실 생각이세요?</h2>
+      <p class="help">하나만 골라주세요. 나중에 바꿔도 돼요.</p>
+      <div class="presets" id="premOpts">
+        <button class="pbtn" data-prem="9"><div class="pl">조금만</div><div class="pa">매달 9만원</div></button>
+        <button class="pbtn" data-prem="30"><div class="pl">보통</div><div class="pa">매달 30만원</div></button>
+        <button class="pbtn" data-prem="50"><div class="pl">많이</div><div class="pa">매달 50만원</div></button>
+        <button class="pbtn" data-prem="62"><div class="pl">최대로</div><div class="pa">매달 약 62만원</div></button>
+      </div>
+      <p class="help big" style="margin-top:18px">💡 <b>알아두세요.</b> 국민연금은 <b>'얼마를 내느냐'보다 '몇 달을 더 내느냐'</b>가 연금을 더 많이 올려줍니다. 부담되면 적게, 기간을 채우는 게 좋아요.</p>
+    </section>
+
+    <!-- STEP 5: addYears -->
+    <section class="screen" data-key="s5">
+      <div class="qnum">질문 5</div>
+      <h2 class="q">몇 년 동안<br>더 내실 생각이세요?</h2>
+      <p class="help">보통 연금을 받기 시작하기 전까지 더 냅니다.</p>
+      <div class="stepper">
+        <button id="aMinus" aria-label="줄이기">−</button>
+        <div class="val"><div class="n" id="aVal">3</div><div class="u">년 동안</div></div>
+        <button id="aPlus" aria-label="늘리기">＋</button>
+      </div>
+      <div class="feedback show" id="addFb" style="margin-top:24px;background:#eef4ff;border-color:#cfe0ff;color:#1648a8"></div>
+    </section>
+
+    <!-- STEP 6: spouse -->
+    <section class="screen" data-key="s6">
+      <div class="qnum">질문 6</div>
+      <h2 class="q">배우자(남편·아내)도<br>국민연금을 받고 계세요?</h2>
+      <p class="help">먼저 돌아가셨을 때 손해를 따져보기 위해 여쭤봐요.</p>
+      <div class="opts" id="spouseOpts">
+        <button class="opt" data-group="spouse" data-value="yes"><span class="emoji">👵</span><span class="ot">네, 받고 계세요</span><span class="chk">✓</span></button>
+        <button class="opt" data-group="spouse" data-value="no"><span class="emoji">🙅</span><span class="ot">아니요 / 혼자예요</span><span class="chk">✓</span></button>
+        <button class="opt" data-group="spouse" data-value="unknown"><span class="emoji">🤷</span><span class="ot">잘 모르겠어요</span><span class="chk">✓</span></button>
+      </div>
+    </section>
+
+    <!-- STEP 7: dependent -->
+    <section class="screen" data-key="s7">
+      <div class="qnum">질문 7 (마지막!)</div>
+      <h2 class="q">지금 건강보험을<br>자녀·배우자 밑에 얹어 쓰세요?</h2>
+      <p class="help big">이걸 <b>'피부양자'</b>라고 해요. 따로 건강보험료를 안 내고, 가족 보험에 같이 올라가 있는 경우예요.</p>
+      <div class="opts" id="depOpts" style="margin-top:18px">
+        <button class="opt" data-group="dependent" data-value="yes"><span class="emoji">👨‍👩‍👧</span><span class="ot">네, 가족 밑에 올라가 있어요<span class="od">따로 건강보험료를 안 내요</span></span><span class="chk">✓</span></button>
+        <button class="opt" data-group="dependent" data-value="no"><span class="emoji">🧾</span><span class="ot">아니요, 제가 따로 내요<span class="od">지역가입자로 건강보험료 납부</span></span><span class="chk">✓</span></button>
+        <button class="opt" data-group="dependent" data-value="unknown"><span class="emoji">🤷</span><span class="ot">잘 모르겠어요</span><span class="chk">✓</span></button>
+      </div>
+    </section>
+
+    <!-- CONFIRM -->
+    <section class="screen" data-key="confirm">
+      <div class="qnum">거의 다 됐어요</div>
+      <h2 class="q">이대로 분석할까요?</h2>
+      <p class="help">고치고 싶은 게 있으면 '수정'을 눌러주세요.</p>
+      <div class="sumlist" id="sumList"></div>
+      <div class="err" id="err"></div>
+    </section>
+
+    <!-- RESULT -->
+    <section class="screen" data-key="result">
+      <div id="resultBody"></div>
+    </section>
+
+  </div>
+
+  <div class="nav" id="navWrap">
+    <button class="next" id="nextBtn">시작하기</button>
+  </div>
+
+</div>
+
+<script>
+/* ===================== 제도 파라미터 (2026 확정치·검증완료) ===================== */
+const P = { Aval:3193511, constant2026:1.29, ceilingPast:6370000, ceiling2026:6590000, inflation:0.025, depThreshold:20000000 };
+function rateFor(y){ return Math.min(0.13, 0.095 + 0.005*Math.max(0,y-2026)); }
+function constFor(y){
+  if(y<=1998) return 2.4; if(y<=2007) return 1.8;
+  if(y<=2025) return 1.5 - 0.015*(y-2008); return 1.29;
+}
+function avgConst(s,e){ if(e<=s) return P.constant2026; let a=0,c=0; for(let y=s;y<e;y++){a+=constFor(y);c++;} return a/c; }
+
+const man=w=>Math.round(w/10000);
+const fmtMan=w=>man(w).toLocaleString('ko-KR')+'만 원';
+const fmtMan1=w=>(Math.round(w/1000)/10).toLocaleString('ko-KR')+'만 원';
+const round1=n=>Math.round(n*10)/10;
+const today=new Date();
+function startAge(by){ if(by<=1952)return 60; if(by<=1956)return 61; if(by<=1960)return 62; if(by<=1964)return 63; if(by<=1968)return 64; return 65; }
+function ageNow(by,bm){ let a=today.getFullYear()-by; if(today.getMonth()+1<bm) a--; return a; }
+
+/* ===================== 계산 엔진 (검증완료) ===================== */
+function calc(input){
+  const {birthYear:by, birthMonth:bm, years, premiumWon, addYears} = input;
+  const Aval=P.Aval, ceil26=P.ceiling2026;
+  const ceilFor=y=> y<=2025?P.ceilingPast:ceil26;
+  const sAge=startAge(by), startYear=by+sAge, curAge=ageNow(by,bm);
+  const obligationEnded=curAge>=60, curYear=today.getFullYear();
+
+  let joinType,joinDesc;
+  if(curAge>=65){ joinType='종료'; joinDesc='만 65세가 넘어 더 납부할 수 없는 상태입니다.'; }
+  else if(curAge>=60){ joinType='임의계속가입'; joinDesc='만 60세가 지나 의무가입은 끝났습니다. 더 내려면 <b>임의계속가입</b> 신청이 필요해요.'; }
+  else if(input.status==='reemploy'||input.status==='self'){ joinType='사업장/지역 가입자'; joinDesc='아직 만 60세 전이고 일을 하고 계셔서 <b>의무가입</b> 상태입니다.'; }
+  else { joinType='임의가입'; joinDesc='소득이 없어 의무는 아니지만, 본인이 원하면 <b>임의가입</b>으로 낼 수 있어요.'; }
+
+  const monthsNow=Math.round(years*12), nAdd=Math.round(addYears), addMonths=nAdd*12, monthsB=monthsNow+addMonths;
+  const enrollEnd=Math.min(curYear,by+60), enrollStart=enrollEnd-Math.round(years);
+  const betaA=avgConst(enrollStart,enrollEnd);
+
+  let totalPaid=0,creditedSum=0;
+  for(let k=0;k<nAdd;k++){ const y=curYear+k, rate=rateFor(y), maxPrem=ceilFor(y)*rate, actual=Math.min(premiumWon,maxPrem); totalPaid+=actual*12; creditedSum+=actual/rate; }
+  const newIncome=nAdd>0?creditedSum/nAdd:0;
+  const betaB=(betaA*monthsNow+P.constant2026*addMonths)/monthsB;
+  const Bval=input.avgIncome?input.avgIncome:newIncome*0.75;
+  const mult=m=>1+0.05*Math.max(0,m-240)/12;
+  const monthlyA=betaA*(Aval+Bval)*mult(monthsNow)/12;
+  const newBval=(Bval*monthsNow+newIncome*addMonths)/monthsB;
+  const monthlyB=betaB*(Aval+newBval)*mult(monthsB)/12;
+  const monthlyGain=Math.max(0,monthlyB-monthlyA), annualGain=monthlyGain*12;
+
+  const maxPremiumNow=Math.round(ceilFor(curYear)*rateFor(curYear));
+  const overPremium=premiumWon>maxPremiumNow, premiumCappedNow=Math.min(premiumWon,maxPremiumNow);
+  const beYears=annualGain>0?totalPaid/annualGain:Infinity, beAge=sAge+beYears;
+
+  const avgMonthlyPrem=addMonths>0?totalPaid/addMonths:0, rMon=input.rateAssume/12;
+  const fv=rMon>0?avgMonthlyPrem*((Math.pow(1+rMon,addMonths)-1)/rMon):totalPaid;
+  const realR=input.rateAssume-P.inflation;
+  let depleteYears; if(annualGain<=0)depleteYears=Infinity; else if(realR<=0)depleteYears=fv/annualGain; else{const ra=fv*realR/annualGain; depleteYears=ra>=1?Infinity:-Math.log(1-ra)/Math.log(1+realR);}
+  const depleteAge=sAge+depleteYears;
+
+  const annualPensionA=monthlyA*12, annualPensionB=monthlyB*12;
+  const depRisk=annualPensionB>=P.depThreshold?'high':annualPensionB>=P.depThreshold*0.85?'mid':'low';
+  const crossedByAdd=(annualPensionA<P.depThreshold)&&(annualPensionB>=P.depThreshold);
+  const estHealthMonthly=(annualPensionB*0.5*0.08)/12*(input.property==='yes'?1.5:1);
+
+  return {sAge,startYear,curAge,curYear,obligationEnded,joinType,joinDesc,monthsNow,addMonths,monthsB,nAdd,years,addYears,
+    enrollStart,enrollEnd,betaA,premiumWon,premiumCappedNow,overPremium,maxPremiumNow,Aval,Bval,
+    monthlyA,monthlyB,monthlyGain,annualGain,totalPaid,beYears,beAge,fv,depleteYears,depleteAge,rateAssume:input.rateAssume,
+    annualPensionB,depRisk,crossedByAdd,estHealthMonthly,rate2026:rateFor(curYear)};
+}
+
+/* ===================== 마법사(단계) 로직 ===================== */
+const state={ birthYear:null, birthMonth:null, status:null, years:25, yearsUnknown:false, premiumMan:null, addYears:3, spouse:'unknown', dependent:'unknown', property:'unknown', rateAssume:0.05 };
+const flow=['welcome','s1','s2','s3','s4','s5','s6','s7','confirm','result'];
+const titles={ welcome:['국민연금, 더 낼까 말까?','쉽게 알려드릴게요'], s1:['질문 1 / 7','태어난 해'], s2:['질문 2 / 7','지금 상황'], s3:['질문 3 / 7','가입 기간'], s4:['질문 4 / 7','매달 더 낼 돈'], s5:['질문 5 / 7','더 낼 기간'], s6:['질문 6 / 7','배우자 연금'], s7:['질문 7 / 7','건강보험'], confirm:['입력 확인','거의 다 됐어요'], result:['분석 결과','천천히 읽어보세요'] };
+let pos=0;
+
+const screens=[...document.querySelectorAll('.screen')];
+const byKey=k=>document.querySelector('.screen[data-key="'+k+'"]');
+const nextBtn=document.getElementById('nextBtn');
+const backBtn=document.getElementById('backBtn');
+const pfill=document.getElementById('pfill');
+const navWrap=document.getElementById('navWrap');
+
+function inputStepIndex(key){ const m={s1:1,s2:2,s3:3,s4:4,s5:5,s6:6,s7:7}; return m[key]||0; }
+
+function showStep(){
+  const key=flow[pos];
+  screens.forEach(s=>s.classList.toggle('active', s.dataset.key===key));
+  document.getElementById('topTitle').textContent=titles[key][0];
+  document.getElementById('topSub').textContent=titles[key][1];
+  backBtn.classList.toggle('show', pos>0 && key!=='result');
+  const stp=inputStepIndex(key);
+  pfill.style.width=(stp/7*100)+'%';
+
+  // nav button label & state
+  navWrap.style.display = key==='result' ? 'none':'block';
+  if(key==='welcome') nextBtn.textContent='시작하기 ▶';
+  else if(key==='confirm') nextBtn.textContent='✓ 결과 보기';
+  else nextBtn.textContent='다음 ▶';
+  nextBtn.classList.toggle('gray', key==='confirm'?false:false);
+
+  refreshStep(key);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function refreshStep(key){
+  if(key==='s1'){ updateBirthFb(); renderMonths(); }
+  if(key==='s2'){ markGroup('statusOpts','status'); }
+  if(key==='s3'){ document.getElementById('yVal').textContent = state.yearsUnknown?'약 20':state.years;
+                  document.getElementById('yUnknown').classList.toggle('sel', state.yearsUnknown); }
+  if(key==='s4'){ markPrem(); }
+  if(key==='s5'){ document.getElementById('aVal').textContent=state.addYears; updateAddFb(); }
+  if(key==='s6'){ markGroup('spouseOpts','spouse'); }
+  if(key==='s7'){ markGroup('depOpts','dependent'); }
+  if(key==='confirm'){ renderSummary(); }
+  validateNext(key);
+}
+function markGroup(containerId,group){
+  const c=document.getElementById(containerId); if(!c) return;
+  c.querySelectorAll('.opt[data-group]').forEach(o=>o.classList.toggle('sel', state[group]!=null && o.dataset.value===state[group]));
+}
+function markPrem(){ document.querySelectorAll('.pbtn[data-prem]').forEach(b=>b.classList.toggle('sel', +b.dataset.prem===state.premiumMan)); }
+
+function validateNext(key){
+  let ok=true;
+  if(key==='s1') ok = !!state.birthYear && state.birthYear>=1940 && state.birthYear<=2010;
+  if(key==='s2') ok = !!state.status;
+  if(key==='s4') ok = !!state.premiumMan;
+  nextBtn.disabled = !ok;
+}
+
+function go(delta){
+  const key=flow[pos];
+  if(delta>0){
+    if(key==='confirm'){ runAnalysis(); pos=flow.indexOf('result'); showStep(); return; }
+    pos=Math.min(flow.length-1,pos+1);
+  }else{
+    pos=Math.max(0,pos-1);
+  }
+  showStep();
+}
+nextBtn.addEventListener('click',()=>go(1));
+backBtn.addEventListener('click',()=>go(-1));
+
+/* ---- 질문1: 출생 ---- */
+const birthInput=document.getElementById('birthYear');
+birthInput.addEventListener('input',()=>{ state.birthYear=parseInt(birthInput.value,10)||null; updateBirthFb(); validateNext('s1'); });
+function updateBirthFb(){
+  const fb=document.getElementById('birthFb');
+  if(state.birthYear&&state.birthYear>=1940&&state.birthYear<=2010){
+    const a=ageNow(state.birthYear, state.birthMonth||6), sa=startAge(state.birthYear), sy=state.birthYear+sa;
+    fb.innerHTML='✅ 올해 <b>만 '+a+'세</b>시네요. 국민연금은 <b>만 '+sa+'세('+sy+'년)</b>부터 받으실 수 있어요.';
+    fb.classList.add('show');
+  }else fb.classList.remove('show');
+}
+function renderMonths(){
+  const g=document.getElementById('monthGrid');
+  if(g.childElementCount) { [...g.children].forEach(b=>b.classList.toggle('sel', +b.dataset.m===state.birthMonth)); return; }
+  for(let m=1;m<=12;m++){ const b=document.createElement('button'); b.className='mbtn'; b.dataset.m=m; b.textContent=m+'월';
+    b.onclick=()=>{ state.birthMonth=m; [...g.children].forEach(x=>x.classList.toggle('sel',x===b)); updateBirthFb(); };
+    g.appendChild(b); }
+}
+
+/* ---- 옵션 카드 공통 ---- */
+document.querySelectorAll('.opt[data-group]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const g=btn.dataset.group, v=btn.dataset.value;
+    state[g]=v;
+    btn.parentElement.querySelectorAll('.opt').forEach(o=>o.classList.toggle('sel', o===btn));
+    validateNext(flow[pos]);
+  });
+});
+
+/* ---- 질문3: 가입기간 stepper ---- */
+function clearUnknown(){ state.yearsUnknown=false; document.getElementById('yUnknown').classList.remove('sel'); }
+document.getElementById('yMinus').onclick=()=>{ clearUnknown(); state.years=Math.max(0,state.years-1); document.getElementById('yVal').textContent=state.years; };
+document.getElementById('yPlus').onclick=()=>{ clearUnknown(); state.years=Math.min(45,state.years+1); document.getElementById('yVal').textContent=state.years; };
+document.getElementById('yUnknown').onclick=()=>{ state.yearsUnknown=true; state.years=20; document.getElementById('yVal').textContent='약 20'; document.getElementById('yUnknown').classList.add('sel'); setTimeout(()=>go(1),350); };
+
+/* ---- 질문4: 금액 preset ---- */
+document.querySelectorAll('.pbtn[data-prem]').forEach(b=>{
+  b.onclick=()=>{ state.premiumMan=+b.dataset.prem; document.querySelectorAll('.pbtn').forEach(x=>x.classList.toggle('sel',x===b)); validateNext('s4'); };
+});
+
+/* ---- 질문5: 기간 stepper ---- */
+document.getElementById('aMinus').onclick=()=>{ state.addYears=Math.max(1,state.addYears-1); document.getElementById('aVal').textContent=state.addYears; updateAddFb(); };
+document.getElementById('aPlus').onclick=()=>{ state.addYears=Math.min(10,state.addYears+1); document.getElementById('aVal').textContent=state.addYears; updateAddFb(); };
+function updateAddFb(){ const fb=document.getElementById('addFb'); const m=(state.premiumMan||30); fb.innerHTML='👉 매달 '+m+'만원씩 <b>'+state.addYears+'년</b>이면, 모두 합쳐 약 <b>'+(m*12*state.addYears).toLocaleString('ko-KR')+'만원</b>을 더 내시는 거예요.'; }
+
+/* ---- 확인 화면 ---- */
+function renderSummary(){
+  const stLabel={jobless:'퇴직 후 무직',house:'전업주부',reemploy:'재취업(직장)',self:'자영업/지역'}[state.status]||'-';
+  const spLabel={yes:'받고 계심',no:'아니오/혼자',unknown:'모름'}[state.spouse];
+  const depLabel={yes:'가족 밑에 있음',no:'직접 납부',unknown:'모름'}[state.dependent];
+  const rows=[
+    ['태어난 해', (state.birthYear||'-')+'년 '+(state.birthMonth?state.birthMonth+'월':''),'s1'],
+    ['지금 상황', stLabel,'s2'],
+    ['가입 기간', state.yearsUnknown?'잘 모름(20년)':state.years+'년','s3'],
+    ['매달 더 낼 돈', (state.premiumMan||'-')+'만원','s4'],
+    ['더 낼 기간', state.addYears+'년','s5'],
+    ['배우자 연금', spLabel,'s6'],
+    ['건강보험', depLabel,'s7'],
+  ];
+  document.getElementById('sumList').innerHTML=rows.map(r=>
+    '<div class="sumrow"><div class="sk">'+r[0]+'</div><div class="sv">'+r[1]+'</div><button class="edit" data-go="'+r[2]+'">수정</button></div>'
+  ).join('');
+  document.querySelectorAll('.edit[data-go]').forEach(b=>b.onclick=()=>{ pos=flow.indexOf(b.dataset.go); showStep(); });
+}
+
+/* ===================== 분석 실행 & 결과 ===================== */
+let lastR=null,lastInput=null;
+function runAnalysis(){
+  const input={ birthYear:state.birthYear, birthMonth:state.birthMonth||6, status:state.status,
+    years:state.yearsUnknown?20:state.years, yearsUnknown:state.yearsUnknown,
+    premiumWon:(state.premiumMan||30)*10000, addYears:state.addYears,
+    spouse:state.spouse, dependent:state.dependent, property:state.property, rateAssume:state.rateAssume };
+  lastR=calc(input); lastInput=input;
+  document.getElementById('resultBody').innerHTML=renderSimple(lastR,input)+renderExpert(lastR,input);
+  bindResult();
+}
+
+function renderSimple(r,input){
+  // 신호등 결론
+  let light,vclass,vh,vs;
+  if(r.depRisk==='high' && input.dependent!=='no'){ light='🔴'; vclass='red'; vh='잠깐! 다시 생각해 보세요'; vs='연금은 조금 늘지만, 건강보험료가 더 나갈 수 있어요. 아래 설명을 꼭 읽어주세요.'; }
+  else if(r.depRisk==='mid'){ light='🟡'; vclass='amber'; vh='금액을 조금 줄여서 내세요'; vs='기간은 채우되, 매달 내는 돈은 조금 낮추는 게 더 이득일 수 있어요.'; }
+  else { light='🟢'; vclass='green'; vh='더 내셔도 괜찮아요'; vs='오래 사실수록 이득이에요. 단, 금액보다 "기간"을 채우는 게 중요해요.'; }
+
+  const overNote = r.overPremium ? '<div class="warnrow"><span class="we">ℹ️</span><div>고르신 금액은 법으로 정한 최대치를 넘어, <b>매달 '+fmtMan(r.premiumCappedNow)+'</b>까지만 낼 수 있어요. 그 금액으로 계산했어요.</div></div>' : '';
+
+  // 쉬운 경고들
+  let warns='';
+  if(r.depRisk==='high'||r.depRisk==='mid'){
+    warns+='<div class="warnrow"><span class="we">🏥</span><div><b>건강보험을 조심하세요.</b> 연금을 더 받으면 가족 밑에 얹어 쓰던 건강보험에서 빠져, 매달 약 '+fmtMan1(r.estHealthMonthly)+'의 보험료를 새로 내야 할 수 있어요. 그러면 더 받는 연금보다 더 나가는 돈이 클 수도 있어요.</div></div>';
+  }
+  if(input.spouse==='yes'){
+    warns+='<div class="warnrow"><span class="we">💔</span><div><b>배우자도 연금을 받고 계세요.</b> 혹시 먼저 돌아가시면, 배우자는 본인 연금과 유족연금 중 하나만 받게 돼서(둘 다는 못 받아요), 애써 더 낸 돈을 많이 못 돌려받을 수 있어요.</div></div>';
+  }
+  warns+='<div class="warnrow"><span class="we">⏳</span><div><b>오래 사실수록 이득이에요.</b> 더 낸 돈은 <b>'+(r.depleteAge===Infinity?'평생':'만 '+round1(r.depleteAge)+'세')+'</b> 넘게 받으셔야 확실히 이득이에요. 건강이 괜찮으시면 유리합니다.</div></div>';
+
+  return `
+  <div class="verdict ${vclass}">
+    <div class="light">${light}</div>
+    <div class="vh">${vh}</div>
+    <div class="vs">${vs}</div>
+  </div>
+
+  <div class="bigcompare">
+    <div class="bc"><div class="bl">지금 멈추면</div><div class="bn">${fmtMan(r.monthlyA)}<small> /달</small></div></div>
+    <div class="bc b"><div class="bl">${r.addYears}년 더 내면</div><div class="bn">${fmtMan(r.monthlyB)}<small> /달</small></div></div>
+  </div>
+  <div class="gainbox"><div class="gl">매달 이만큼 더 받아요</div><div class="gn">+${fmtMan1(r.monthlyGain)}</div></div>
+
+  <div class="rcard">
+    <h3>💰 더 내는 게 이득일까요?</h3>
+    <p>앞으로 더 내는 돈은 모두 합쳐 약 <b>${fmtMan(r.totalPaid)}</b>이에요. 연금을 <b>${r.beAge===Infinity?'-':'만 '+round1(r.beAge)+'세'}</b>까지 받으시면 낸 돈을 모두 되찾고, 그 뒤로는 계속 이득이에요.</p>
+    <p style="font-size:14.5px;color:#5e6b7a">※ 1965년 무렵 태어나신 분들은 보통 남성 만 84세, 여성 만 89세 정도까지 사세요.</p>
+  </div>
+
+  <div class="rcard">
+    <h3>⚠️ 이것만은 꼭 알아두세요</h3>
+    ${overNote}${warns}
+  </div>
+
+  <a class="callbtn" href="tel:1355"><span class="cph">📞</span> 1355 눌러서 정확히 물어보기</a>
+  <div class="callsub">국민연금공단(무료)에서 내 실제 기록으로 정확한 금액을 알려줘요.</div>
+
+  <button class="restart" id="restartBtn">↺ 처음부터 다시 하기</button>
+  `;
+}
+
+/* 전문가용 상세 (접이식) */
+function renderExpert(r,input){
+  const tlStart=r.sAge,tlEnd=95,span=tlEnd-tlStart,pp=a=>Math.min(100,Math.max(0,(a-tlStart)/span*100));
+  const beP=r.beAge===Infinity?100:pp(r.beAge), dpP=r.depleteAge===Infinity?100:pp(r.depleteAge);
+  return `
+  <details class="expert">
+    <summary>📑 전문가용 자세한 분석 (제도값·수치 근거)</summary>
+    <div class="expert-body">
+      <div class="dh">🗂️ 적용한 2026 확정 제도값</div>
+      <table class="dt">
+        <tr><th>A값(전체가입자 평균소득)</th><td class="n">${fmtMan(r.Aval)}</td></tr>
+        <tr><th>소득대체율(상수)</th><td class="n">43% (1.29)</td></tr>
+        <tr><th>${r.curYear}년 보험료율</th><td class="n">${(r.rate2026*100)}%</td></tr>
+        <tr><th>기준소득월액 상한</th><td class="n">659만 원</td></tr>
+        <tr><th>시기별 상수(가입 ${r.enrollStart}~${r.enrollEnd})</th><td class="n">가중 ${round1(r.betaA)}</td></tr>
+      </table>
+
+      <div class="dh">⚖️ 시나리오 비교</div>
+      <table class="dt">
+        <tr><th></th><th style="text-align:right">A. 중단</th><th style="text-align:right">B. ${r.addYears}년 추가</th></tr>
+        <tr><td>가입기간</td><td class="n">${r.years}년</td><td class="n">${round1(r.years+r.addYears)}년</td></tr>
+        <tr><td>월 수령액(추정)</td><td class="n">${fmtMan(r.monthlyA)}</td><td class="n">${fmtMan(r.monthlyB)}</td></tr>
+        <tr class="hl"><td>차이</td><td class="n" colspan="2">매달 +${fmtMan1(r.monthlyGain)}</td></tr>
+      </table>
+
+      <div class="dh">💡 손익분기 (ROI)</div>
+      <table class="dt">
+        <tr><th>추가 납입 총액</th><td class="n">${fmtMan(r.totalPaid)}</td></tr>
+        <tr><th>연간 추가 수령</th><td class="n">${fmtMan(r.annualGain)}</td></tr>
+        <tr class="hl"><th>명목 손익분기</th><td class="n">${r.beAge===Infinity?'-':'만 '+round1(r.beAge)+'세'}</td></tr>
+        <tr><th>직접 운용 시 소진</th><td class="n">${r.depleteAge===Infinity?'-':'만 '+round1(r.depleteAge)+'세'}</td></tr>
+      </table>
+
+      <div class="tline">
+        <div class="trk"></div><div class="fl" style="width:${beP}%"></div>
+        <div class="tmk s" style="left:0%"><div class="dot"></div><div class="l">연금개시</div><div class="a">만 ${r.sAge}세</div></div>
+        <div class="tmk b" style="left:${beP}%"><div class="dot"></div><div class="l">손익분기</div><div class="a">${r.beAge===Infinity?'-':'만 '+round1(r.beAge)+'세'}</div></div>
+        <div class="tmk d" style="left:${dpP}%"><div class="dot"></div><div class="l">운용소진</div><div class="a">${r.depleteAge===Infinity?'-':'만 '+round1(r.depleteAge)+'세'}</div></div>
+      </div>
+
+      <div class="dnote">현재 가입형태: <b>${r.joinType}</b>. ${r.joinDesc} 본 수치는 표준 산식·2026 확정 제도값 기반 추정으로, 실제 금액은 개인 소득이력(B값)에 따라 달라집니다.</div>
+
+      <div class="disc">
+        출처: 국민연금공단(상한·A값·산식), 2026 연금개혁(보험료율 9.5%→13%·소득대체율 43%) ·
+        <a href="https://www.nps.or.kr/" target="_blank" rel="noopener">nps.or.kr</a><br>
+        ⚠️ 교육·참고용 추정치이며 법적 효력이 없습니다. 최종 수치는 1355로 확인하세요.
+      </div>
+    </div>
+  </details>
+  `;
+}
+
+function bindResult(){
+  const rb=document.getElementById('restartBtn');
+  if(rb) rb.onclick=()=>{ pos=0; showStep(); };
+}
+
+/* 시작 */
+showStep();
+</script>
+</body>
+</html>
