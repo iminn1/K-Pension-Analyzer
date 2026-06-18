@@ -452,7 +452,7 @@ function refreshStep(key){
   if(key==='s3'){ document.getElementById('yVal').textContent=state.yearsUnknown?'약 20':state.years; document.getElementById('yUnknown').classList.toggle('sel',state.yearsUnknown); }
   if(key==='s3b'){ const el=document.getElementById('npsMonthly'); if(state.npsMonthly) el.value=man(state.npsMonthly); }
   if(key==='s4'){ markPrem(); }
-  if(key==='s5'){ document.getElementById('aVal').textContent=state.addYears; updateAddFb(); }
+  if(key==='s5'){ setupAddStep(); }
   if(key==='s6'){ markGroup('spouseOpts','spouse'); }
   if(key==='s7'){ markGroup('depOpts','dependent'); }
   if(key==='confirm'){ renderSummary(); }
@@ -508,9 +508,31 @@ npsInput.addEventListener('input',()=>{ const v=parseFloat(npsInput.value); stat
 document.getElementById('npsUnknown').onclick=()=>{ state.npsMonthly=null; npsInput.value=''; setTimeout(()=>go(1),250); };
 
 document.querySelectorAll('.pbtn[data-prem]').forEach(b=>b.onclick=()=>{ state.premiumMan=+b.dataset.prem; markPrem(); validateNext('s4'); });
-document.getElementById('aMinus').onclick=()=>{ state.addYears=Math.max(1,state.addYears-1); document.getElementById('aVal').textContent=state.addYears; updateAddFb(); };
-document.getElementById('aPlus').onclick=()=>{ state.addYears=Math.min(10,state.addYears+1); document.getElementById('aVal').textContent=state.addYears; updateAddFb(); };
-function updateAddFb(){ const m=state.premiumMan||30; document.getElementById('addFb').innerHTML='👉 매달 '+m+'만원씩 <b>'+state.addYears+'년</b>이면 모두 합쳐 약 <b>'+(m*12*state.addYears).toLocaleString('ko-KR')+'만원</b>을 더 내시는 거예요.'; }
+// 추가 납입 가능 연수 = 만 65세까지 남은 햇수 (입력 나이에 맞춰 자동 제한)
+function maxAddYears(){ if(!state.birthYear) return 10; return Math.max(0, 65-ageNow(state.birthYear, state.birthMonth||6)); }
+function updateAddButtons(maxY){
+  document.getElementById('aMinus').disabled = maxY<=0 || state.addYears<=1;
+  document.getElementById('aPlus').disabled  = maxY<=0 || state.addYears>=maxY;
+}
+function setupAddStep(){
+  const maxY=maxAddYears();
+  if(maxY<=0){
+    state.addYears=0; document.getElementById('aVal').textContent='0'; updateAddButtons(0);
+    document.getElementById('addFb').innerHTML='⛔ 만 '+ageNow(state.birthYear,state.birthMonth||6)+'세는 <b>추가 납입이 불가능</b>해요(임의계속가입은 만 65세 전까지). \'다음\'을 눌러 현재 상황을 확인하세요.';
+    return;
+  }
+  if(state.addYears<1) state.addYears=Math.min(3,maxY);
+  if(state.addYears>maxY) state.addYears=maxY;
+  document.getElementById('aVal').textContent=state.addYears;
+  updateAddButtons(maxY); updateAddFb(maxY);
+}
+document.getElementById('aMinus').onclick=()=>{ const maxY=maxAddYears(); if(maxY<=0)return; state.addYears=Math.max(1,state.addYears-1); document.getElementById('aVal').textContent=state.addYears; updateAddButtons(maxY); updateAddFb(maxY); };
+document.getElementById('aPlus').onclick=()=>{ const maxY=maxAddYears(); if(maxY<=0)return; state.addYears=Math.min(maxY,state.addYears+1); document.getElementById('aVal').textContent=state.addYears; updateAddButtons(maxY); updateAddFb(maxY); };
+function updateAddFb(maxY){
+  if(maxY===undefined) maxY=maxAddYears();
+  const m=state.premiumMan||30;
+  document.getElementById('addFb').innerHTML='👉 매달 '+m+'만원씩 <b>'+state.addYears+'년</b>이면 모두 합쳐 약 <b>'+(m*12*state.addYears).toLocaleString('ko-KR')+'만원</b>이에요.<br>※ 만 65세까지 <b>최대 '+maxY+'년</b> 낼 수 있어요.';
+}
 
 function renderSummary(){
   const stL={jobless:'퇴직 후 무직',house:'전업주부',reemploy:'재취업(직장)',self:'자영업/지역'}[state.status]||'-';
