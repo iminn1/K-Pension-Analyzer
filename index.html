@@ -166,10 +166,45 @@
   .err{display:none;background:var(--red-soft);border:1px solid #f3c4c4;color:#8a1f1f;border-radius:12px;padding:13px 15px;font-size:15px;font-weight:700;margin-top:16px}
   .err.show{display:block}
 
+  /* 제휴 상담 CTA (광고) */
+  .adcard{margin-top:16px;background:#fff;border:1.5px solid #e2d6f3;border-radius:16px;padding:16px 18px}
+  .adlabel{display:inline-block;font-size:11px;font-weight:800;color:#7a5cc0;background:#f1ebfb;border:1px solid #e2d6f3;border-radius:6px;padding:2px 8px;letter-spacing:.03em}
+  .adttl{font-size:17.5px;font-weight:800;color:var(--navy);margin-top:10px}
+  .adpitch{font-size:14.5px;color:#475467;margin-top:6px;line-height:1.6}
+  .adbtn{display:flex;align-items:center;justify-content:center;width:100%;margin-top:12px;background:#6b4fc0;color:#fff;text-decoration:none;border-radius:13px;padding:16px;font-size:17px;font-weight:800}
+  .adbtn:active{transform:translateY(1px)}
+  .adnote{font-size:11.5px;color:#9aa6b4;margin-top:8px;text-align:center}
+
+  /* 리드 폼 모달 */
+  .modal{position:fixed;inset:0;z-index:80;display:none;align-items:flex-end;justify-content:center;background:rgba(15,23,40,.55)}
+  .modal.show{display:flex}
+  .sheet{background:#fff;width:100%;max-width:560px;border-radius:22px 22px 0 0;padding:22px 20px calc(24px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto;position:relative;animation:up .28s ease}
+  @keyframes up{from{transform:translateY(30px);opacity:.5}to{transform:none;opacity:1}}
+  .mclose{position:absolute;right:14px;top:14px;width:38px;height:38px;border-radius:50%;border:none;background:#eef1f6;font-size:16px;font-weight:700;color:#46566a;cursor:pointer}
+  .mlbl{display:inline-block;font-size:11px;font-weight:800;color:#7a5cc0;background:#f1ebfb;border:1px solid #e2d6f3;border-radius:6px;padding:2px 8px}
+  .mtitle{font-size:21px;font-weight:800;color:var(--navy);margin-top:10px}
+  .mdesc{font-size:15px;color:var(--muted);margin-top:6px;line-height:1.6}
+  .flabel{display:block;font-size:14px;font-weight:800;color:#384150;margin:16px 0 7px}
+  .finput{width:100%;padding:14px;border:2px solid var(--line);border-radius:12px;font-size:17px;font-family:inherit;color:var(--ink);background:#fff}
+  .finput:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(31,95,214,.12)}
+  .fcheck{display:flex;gap:10px;align-items:flex-start;margin-top:18px;font-size:14.5px;color:#384150;line-height:1.55;cursor:pointer;font-weight:700}
+  .fcheck input{width:24px;height:24px;flex-shrink:0;margin-top:1px;accent-color:var(--blue)}
+  .fcheck b{display:block;font-weight:600;color:#8a94a3;font-size:12.5px;margin-top:4px}
+  .pplink{display:inline-block;margin-top:10px;font-size:13.5px;font-weight:800;color:var(--blue);text-decoration:underline;text-underline-offset:2px}
+  .ferr{display:none;color:#b42318;font-size:14.5px;font-weight:700;margin-top:12px}
+  .ferr.show{display:block}
+  .fsubmit{width:100%;margin-top:18px;background:var(--green);color:#fff;border:none;border-radius:14px;padding:18px;font-size:18px;font-weight:800;cursor:pointer;font-family:inherit}
+  .fsubmit:disabled{background:#bcc6d3}
+  .msuccess{display:none;text-align:center;padding:24px 10px 6px}
+  .msuccess.show{display:block}
+  .msuccess .sok{font-size:54px}
+  .msuccess .sokt{font-size:21px;font-weight:800;color:var(--navy);margin-top:8px}
+  .msuccess .soks{font-size:15px;color:var(--muted);margin-top:8px}
+
   .printhead{display:none}
   @media print{
     .app{max-width:none;min-height:0}
-    .topbar,.pbar,.nav,.actbtns,.restart,.callbtn,.callsub,.toast,.disc{display:none!important}
+    .topbar,.pbar,.nav,.actbtns,.restart,.callbtn,.callsub,.toast,.disc,.adcard{display:none!important}
     .stage{padding:0}
     .printhead{display:block;margin-bottom:14px;border-bottom:2.5px solid #13294b;padding-bottom:10px}
     .printhead .pt{font-size:19px;font-weight:800;color:#13294b}
@@ -310,11 +345,61 @@
   <div class="nav" id="navWrap"><button class="next" id="nextBtn">시작하기</button></div>
   <div class="toast" id="toast"></div>
 
+  <div class="modal" id="leadModal" aria-hidden="true">
+    <div class="sheet">
+      <button class="mclose" id="leadClose" aria-label="닫기">✕</button>
+      <span class="mlbl" id="leadLabel">광고 · 제휴</span>
+      <h3 class="mtitle" id="leadTitle">무료 연금 상담 신청</h3>
+      <p class="mdesc" id="leadDesc">전문 상담사가 1:1로 무료 상담해 드려요.</p>
+      <form id="leadForm">
+        <label class="flabel" for="leadName">이름</label>
+        <input class="finput" id="leadName" type="text" placeholder="예) 홍길동" autocomplete="name" />
+        <label class="flabel" for="leadPhone">연락처 (휴대폰)</label>
+        <input class="finput" id="leadPhone" type="tel" inputmode="tel" placeholder="예) 010-1234-5678" autocomplete="tel" />
+        <label class="flabel" for="leadTime">상담 희망 시간 <span style="font-weight:600;color:#9aa6b4">(선택)</span></label>
+        <select class="finput" id="leadTime"><option value="">아무 때나 괜찮아요</option><option>오전</option><option>오후</option><option>저녁</option></select>
+        <label class="fcheck"><input type="checkbox" id="leadAgree" /><span>개인정보 수집·이용 및 상담 제휴사 제공에 동의합니다. <b id="leadPrivacy"></b></span></label>
+        <a class="pplink" href="privacy.html" target="_blank" rel="noopener">개인정보처리방침 전문 보기 ›</a>
+        <div class="ferr" id="leadErr"></div>
+        <button type="submit" class="fsubmit" id="leadSubmit">상담 신청하기</button>
+        <div class="adnote" style="margin-top:10px">신청하셔도 국민연금 가입정보가 바뀌지 않으며, 무료 공식 문의는 ☎1355입니다.</div>
+      </form>
+      <div class="msuccess" id="leadSuccess">
+        <div class="sok">✅</div>
+        <div class="sokt">신청이 접수되었어요!</div>
+        <div class="soks">입력하신 연락처로 곧 연락드릴게요.</div>
+        <button class="restart" id="leadDone" style="margin-top:18px">닫기</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
 /* ===================== 제도 파라미터 (2026 확정치) ===================== */
 const P={ Aval:3193511, constant2026:1.29, ceilingPast:6370000, ceiling2026:6590000, inflation:0.025, depThreshold:20000000, MIN_MONTHS:120 };
+
+/* ===================== 무료 연금 상담 리드(CPS/CPA) 설정 =====================
+   ▸ mode:'form'  = 이름·연락처를 직접 받아 리드 확보(모달 폼). 'link' = 외부 파트너 페이지로 이동.
+   ▸ provider(리드 수신처):
+       'web3forms' → web3forms.com 에서 무료 access key 발급(가입 없이 이메일로 리드 수신). web3formsKey 입력.
+       'formspree' → formspree.io 무료 폼 endpoint. formspreeUrl 입력.
+       'demo'      → 실제 전송 없이 동작만 확인(운영 전 기본값).
+   ▸ 리드를 CPA 제휴사로 넘기려면: 수신 이메일/시트로 받은 뒤 전달하거나, formspree/web3forms 대신 제휴사 API endpoint 사용.
+   ▸ 개인정보(이름·연락처) 수집 = PIPA 적용. 동의 문구·개인정보처리방침 필수. */
+const LEAD={
+  enabled:true,
+  label:'광고 · 제휴',
+  title:'무료 연금 상담 신청',
+  pitch:'전문 상담사가 내 연금·노후 설계를 1:1로 무료 상담해 드려요.',
+  mode:'form',                              // 'form' | 'link'
+  linkUrl:'https://example.com/연금상담',     // mode:'link'일 때 이동 주소
+  provider:'demo',                          // 'web3forms' | 'formspree' | 'demo'
+  web3formsKey:'',                          // ← web3forms.com 무료 access key
+  formspreeUrl:'',                          // ← https://formspree.io/f/xxxxxxx
+  sendResult:true,                          // 분석 결과 요약을 상담사에게 함께 전달
+  privacyNote:'수집 항목: 이름·연락처 / 목적: 연금 상담 연결 / 제3자(상담 제휴사) 제공 / 보유: 상담 완료 후 지체 없이 파기'
+};
 function rateFor(y){ return Math.min(0.13, 0.095+0.005*Math.max(0,y-2026)); }
 function constFor(y){ if(y<=1998)return 2.4; if(y<=2007)return 1.8; if(y<=2025)return 1.5-0.015*(y-2008); return 1.29; }
 function avgConst(s,e){ if(e<=s)return P.constant2026; let a=0,c=0; for(let y=s;y<e;y++){a+=constFor(y);c++;} return a/c; }
@@ -585,6 +670,17 @@ function checklistHtml(r,input){
   return it.map(x=>'<div class="warnrow"><span class="we">'+(x[0]==='warn'?'⚠️':'✅')+'</span><div><b>'+x[1]+'</b><br>'+x[2]+'</div></div>').join('');
 }
 
+function adCtaHtml(){
+  if(!LEAD.enabled) return '';
+  return `
+  <div class="adcard">
+    <span class="adlabel">${LEAD.label}</span>
+    <div class="adttl">💼 ${LEAD.title}</div>
+    <div class="adpitch">${LEAD.pitch}</div>
+    <button class="adbtn" id="leadOpenBtn">무료 상담 신청 ▶</button>
+    <div class="adnote">※ 국민연금공단이 아닌 외부 제휴 상담 서비스입니다.</div>
+  </div>`;
+}
 function renderSimple(r,input){
   const head='<div class="printhead"><div class="pt">국민연금 임의(계속)가입 효율성 분석 결과</div><div class="pd">분석일 '+new Date().toLocaleDateString('ko-KR')+' · 공개 산식 기반 추정치이며 정확한 금액은 ☎1355 확인</div></div>';
 
@@ -644,6 +740,7 @@ function renderSimple(r,input){
   const tail=`
   <a class="callbtn" href="tel:1355"><span class="cph">📞</span> 1355 눌러서 정확히 물어보기</a>
   <div class="callsub">국민연금공단(무료)에서 내 실제 기록으로 정확한 금액을 알려줘요.</div>
+  ${adCtaHtml()}
   <div class="rcard"><h3>📤 이 결과 저장하고 공유하기</h3>
     <div class="actbtns">
       <button class="actb pdf" id="savePdfBtn"><span class="ae">📄</span><span class="ot2">PDF로 저장 · 인쇄하기<span class="sub">내 결과를 파일로 보관하거나 종이에 출력</span></span></button>
@@ -698,6 +795,7 @@ function bindResult(){
   const pb=document.getElementById('savePdfBtn'); if(pb) pb.onclick=savePdf;
   const sb=document.getElementById('shareBtn');   if(sb) sb.onclick=shareResult;
   const cb=document.getElementById('copyBtn');     if(cb) cb.onclick=copyLink;
+  const lo=document.getElementById('leadOpenBtn'); if(lo) lo.onclick=openLead;
 }
 
 /* 저장 / 공유 */
@@ -720,6 +818,66 @@ async function copyLink(){
 }
 let _toastT;
 function toast(msg){ const t=document.getElementById('toast'); if(!t)return; t.textContent=msg; t.classList.add('show'); clearTimeout(_toastT); _toastT=setTimeout(()=>t.classList.remove('show'),2800); }
+
+/* ===================== 무료 상담 리드 폼 ===================== */
+const leadModal=document.getElementById('leadModal');
+function openLead(){
+  if(LEAD.mode==='link'){ window.open(LEAD.linkUrl,'_blank','noopener'); return; }
+  document.getElementById('leadLabel').textContent=LEAD.label;
+  document.getElementById('leadTitle').textContent=LEAD.title;
+  document.getElementById('leadDesc').textContent=LEAD.pitch;
+  document.getElementById('leadPrivacy').textContent='('+LEAD.privacyNote+')';
+  document.getElementById('leadForm').style.display='block';
+  document.getElementById('leadSuccess').classList.remove('show');
+  document.getElementById('leadErr').classList.remove('show');
+  leadModal.classList.add('show');
+}
+function closeLead(){ leadModal.classList.remove('show'); }
+function showLeadErr(m){ const e=document.getElementById('leadErr'); e.textContent='⚠️ '+m; e.classList.add('show'); }
+function buildLeadSummary(){
+  if(!lastR) return '';
+  const r=lastR, modeL={cantAdd:'추가납입불가(65세+)',gainQual:'추가로 수급권확보',neverQual:'10년미달',normal:'정상비교'}[r.mode];
+  let s='만'+r.curAge+'세 / 가입'+r.years+'년 / '+modeL;
+  if(r.monthlyB!=null) s+=' / A '+man(r.monthlyA)+'만→B '+man(r.monthlyB)+'만(+'+(Math.round(r.monthlyGain/1000)/10)+'만)';
+  return s;
+}
+async function sendLead(payload){
+  if(LEAD.provider==='web3forms'){
+    if(!LEAD.web3formsKey) return false;
+    const res=await fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},
+      body:JSON.stringify(Object.assign({access_key:LEAD.web3formsKey,subject:'[연금분석기] 무료 상담 신청'},payload))});
+    const j=await res.json(); return !!j.success;
+  }
+  if(LEAD.provider==='formspree'){
+    if(!LEAD.formspreeUrl) return false;
+    const res=await fetch(LEAD.formspreeUrl,{method:'POST',headers:{Accept:'application/json','Content-Type':'application/json'},body:JSON.stringify(payload)});
+    return res.ok;
+  }
+  await new Promise(r=>setTimeout(r,600)); return true; // demo
+}
+if(leadModal){
+  document.getElementById('leadClose').onclick=closeLead;
+  document.getElementById('leadDone').onclick=closeLead;
+  leadModal.addEventListener('click',e=>{ if(e.target===leadModal) closeLead(); });
+  document.getElementById('leadForm').addEventListener('submit',async e=>{
+    e.preventDefault();
+    const name=document.getElementById('leadName').value.trim();
+    const phone=document.getElementById('leadPhone').value.trim();
+    const time=document.getElementById('leadTime').value;
+    const agree=document.getElementById('leadAgree').checked;
+    if(!name) return showLeadErr('이름을 적어주세요.');
+    if(phone.replace(/[^0-9]/g,'').length<9) return showLeadErr('연락처를 정확히 적어주세요.');
+    if(!agree) return showLeadErr('개인정보 수집·이용에 동의해 주세요.');
+    document.getElementById('leadErr').classList.remove('show');
+    const btn=document.getElementById('leadSubmit'); btn.disabled=true; btn.textContent='접수 중…';
+    const payload={ 이름:name, 연락처:phone, 상담희망시간:time||'아무때나',
+      결과요약: LEAD.sendResult?buildLeadSummary():'', 신청경로:'국민연금 효율성 분석기', 신청시각:new Date().toLocaleString('ko-KR') };
+    let ok=false; try{ ok=await sendLead(payload); }catch(_){ ok=false; }
+    btn.disabled=false; btn.textContent='상담 신청하기';
+    if(ok){ document.getElementById('leadForm').style.display='none'; document.getElementById('leadForm').reset(); document.getElementById('leadSuccess').classList.add('show'); }
+    else showLeadErr('전송에 실패했어요. 잠시 후 다시 시도하거나 ☎1355로 문의해 주세요.');
+  });
+}
 
 function loadFromUrl(){
   const q=new URLSearchParams(location.search);
